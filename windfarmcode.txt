@@ -1,0 +1,76 @@
+create table dev_ollie.windfarmsinwales as 
+with wales as 
+(
+select * from boundaryline.country_region cr
+where fid = 932 ta
+),
+topo_area as 
+(
+select ta.toid, ta.descriptiveterm, ST_Centroid(ta.geom) as geom, w.name from osmm_topo.topographicarea ta 
+right join wales w on ST_Intersects(ta.geom, w.geom)
+where 'Wind Turbine'=ANY(descriptiveterm)
+),
+topo_point as 
+(
+select tp.toid, tp.descriptiveterm, tp.geom as geom, w.name from osmm_topo.topographicpoint tp 
+right join wales w on ST_Intersects(tp.geom, w.geom)
+where 'Wind Turbine'=ANY(descriptiveterm)
+)
+select ta.toid, ta.geom, ta.name from topo_area ta
+union
+select tp.toid, tp.geom, tp.name from topo_point tp
+
+
+drop table if exists dev_ollie.windturbines_poly cascade;
+select a.toid, a.theme, a.descriptivegroup, a.make, a.descriptiveterm, a.physicallevel, a.style_description, a.geom as geom
+into dev_ollie.windturbines_poly
+from osmm_topo.topographicarea a,
+dev_ollie.wales w
+where st_intersects (a.geom, w.geom)
+and 'Wind Turbine'=ANY(descriptiveterm);
+
+[09:02] Dave Chapman
+    
+select
+ta.toid, 
+ta.descriptiveterm, 
+cr.name,
+ST_Centroid(ta.geom) as geom 
+from osmm_topo.topographicarea ta 
+join boundaryline.country_region cr on st_intersects(ta.geom, cr.geom) and fid = 932
+
+union all
+select
+tp.toid, 
+tp.descriptiveterm, 
+cr.name,
+tp.geom 
+from osmm_topo.topographicpoint tp 
+join boundaryline.country_region cr on st_intersects(tp.geom, cr.geom) and fid = 932
+
+with wales as (
+
+select
+ta.toid, 
+ta.descriptiveterm, 
+cr.name,
+ST_Centroid(ta.geom) as geom 
+from osmm_topo.topographicarea ta 
+join boundaryline.country_region cr on st_intersects(ta.geom, cr.geom) and fid = 932
+
+union all
+select
+tp.toid, 
+tp.descriptiveterm, 
+cr.name,
+tp.geom 
+from osmm_topo.topographicpoint tp 
+join boundaryline.country_region cr on st_intersects(tp.geom, cr.geom) and fid = 932
+)
+select * from wales
+--where 'Wind Turbine'=ANY(descriptiveterm)
+where descriptiveterm = '{Wind Turbine}'
+
+
+
+
